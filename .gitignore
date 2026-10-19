@@ -1,0 +1,12 @@
+# Secrets never belong in this repository.
+config/settings.json
+data/*.json
+*.log
+.env
+.env.*
+!.env.example
+node_modules
+.DS_Store
+*.zip
+*.tmp
+coverage
