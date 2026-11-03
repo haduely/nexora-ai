@@ -274,7 +274,9 @@ Studio honestly reports *Disconnected*.
 - **Projects** ??? labeled Stage 3 preview; stores nothing yet.
 - **Studio** ??? live probed state: *Checking???* / *Connected* / *Disconnected*, with
   the real endpoint URL and tool count when something answers. It never says
-  Connected without a real response.
+  Connected without a real response. Includes a 4-step **Connect Studio** guide
+  (enable Studio's MCP server, run `studio/mcp-http-bridge.js`, set
+  `NEXORA_MCP_URL`, verify) and links to STUDIO-CONNECTION.md.
 - **Models** ??? live provider configuration: four cards (Pollinations keyless,
   Gemini, Ollama, OpenAI-compatible) with Save & Activate, Test, Load models,
   and Remove stored key. Keys are masked after saving and never re-displayed.
@@ -292,17 +294,20 @@ Supabase Postgres) plus accounts, replacing `localStorage`.
 
 ---
 
-## Remaining blocker (online deployment)
+## Deployment status
 
-Everything code-side for a public deployment is implemented and tested, but the
-site is **not online yet**. Publishing needs authorization only you can give:
+**Live:** https://nexora-ai-8281.onrender.com (Render free web service, Oregon).
 
-1. A **GitHub repository** containing this project (no git is installed on this
-   machine), and
-2. A **hosting account** ??? [Render](https://render.com) free web service is the
-   recommended path (see DEPLOYMENT.md).
-
-Until then no public HTTPS URL exists, and this README deliberately does not
-invent one. Surface this only when you are ready to publish.
+- Health: `GET /api/health` returns `"publicDeployment": true` and the real
+  uptime. Free instances sleep after ~15 minutes idle, so the first request
+  after a quiet period takes ~50 seconds.
+- Chat runs on Google Gemini (`NEXORA_PROVIDER=gemini`,
+  `NEXORA_MODEL=gemini-flash-lite-latest`); keys live only in Render env vars.
+- Deploys are triggered on demand (Render API or dashboard). The repo is linked
+  with autodeploy marked on, but no GitHub webhook exists yet, so a push alone
+  does not deploy — installing Render's GitHub App on the repo fixes that.
+- Studio connection is a **local-mode** feature: Studio's MCP server is stdio,
+  so the hosted copy stays Disconnected by design. See
+  [STUDIO-CONNECTION.md](STUDIO-CONNECTION.md).
 
 
