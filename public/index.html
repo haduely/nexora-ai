@@ -179,6 +179,17 @@
           </div>
         </div>
 
+        <div class="feature-list">
+          <h4>Connect Studio in 4 steps</h4>
+          <ol>
+            <li><b>In Studio:</b> open Assistant, click <b>&hellip;</b> &rarr; <b>Manage MCP Servers</b>, turn on <b>Enable Studio as MCP server</b>.</li>
+            <li><b>Start the bridge:</b> in the project folder run <code>node studio\mcp-http-bridge.js</code>. Studio's MCP server speaks stdio only; this exposes it at <code>http://127.0.0.1:8787/mcp</code>.</li>
+            <li><b>Start Nexora:</b> set <code>NEXORA_MCP_URL=http://127.0.0.1:8787/mcp</code> (or <code>studio.mcpUrl</code> in config) and restart it.</li>
+            <li><b>Verify here:</b> this tab should switch to <b>Connected</b> with a tool count. Then ask: "list what is in Workspace, change nothing".</li>
+          </ol>
+          <p class="note">Full guide, safety notes and troubleshooting: <code>STUDIO-CONNECTION.md</code> in the project. A hosted copy cannot reach your PC, so connecting is a local-mode feature.</p>
+        </div>
+
         <div class="states-grid">
           <div class="state-item"><span class="dot dot-ok"></span><b>Connected</b><p>A live bridge answered and authorized this session.</p></div>
           <div class="state-item"><span class="dot dot-off"></span><b>Disconnected</b><p>No bridge detected. Read-only and idle.</p></div>

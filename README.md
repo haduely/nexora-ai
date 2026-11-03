@@ -79,6 +79,19 @@ covered by tests (`tests/production.test.js`, 9/9).
 
 ---
 
+### Connecting Roblox Studio
+
+Roblox Studio's built-in MCP server speaks stdio; Nexora talks HTTP JSON-RPC.
+Bridge the two, then restart Nexora:
+
+```bat
+node studio\mcp-http-bridge.js
+set NEXORA_MCP_URL=http://127.0.0.1:8787/mcp
+```
+
+Full step-by-step guide, safety notes and troubleshooting:
+[STUDIO-CONNECTION.md](STUDIO-CONNECTION.md).
+
 ## Architecture
 
 ```
@@ -128,9 +141,10 @@ All privileged traffic goes through the local Node process, so API keys stay in
 |-------|---------|--------|
 | Syntax | `node --check` on all changed JS files | 8/8 clean |
 | Module tests | `node tests/modules.test.js` | **10/10 passed** |
-| Roblox verification (deterministic) | `node tests/verify.test.js` | **23/23 passed** |
+| Roblox verification (deterministic) | `node tests/verify.test.js` | **24/24 passed** |
 | Server integration | `node tests/server.test.js` | **18/18 passed** |
 | MCP protocol (real JSON-RPC stub server) | `node tests/mcp.stub.test.js` | **8/8 passed** |
+| Studio MCP bridge (stdio to HTTP, mock server) | `node tests/studio.bridge.test.js` | **4/4 passed** |
 | Production / public-deploy hardening | `node tests/production.test.js` | **9/9 passed** |
 | Live Roblox skills A???D (real AI, paced) | `node tests/roblox.skills.test.js` | **4/4 passed** |
 | UI end-to-end (headless Edge, incl. mobile 390x844) | `node tests/ui.e2e.test.js` | **19/19 passed** |
