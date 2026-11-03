@@ -16,6 +16,7 @@ const path = require("path");
 const PORT = Number(process.env.NEXORA_TEST_PORT || 7899);
 const ROOT = path.join(__dirname, "..");
 const TMP_CONFIG = fs.mkdtempSync(path.join(os.tmpdir(), "nexora-test-config-"));
+const TMP_DATA = fs.mkdtempSync(path.join(os.tmpdir(), "nexora-test-data-"));
 
 function request(method, urlPath, payload) {
   return new Promise((resolve, reject) => {
@@ -73,7 +74,8 @@ async function main() {
     env: Object.assign({}, process.env, {
       NEXORA_PORT: String(PORT),
       NEXORA_HOST: "127.0.0.1",
-      NEXORA_CONFIG_DIR: TMP_CONFIG
+      NEXORA_CONFIG_DIR: TMP_CONFIG,
+      NEXORA_DATA_DIR: TMP_DATA
     }),
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -93,13 +95,14 @@ async function main() {
       assert.ok(res.body.includes("providerGrid"), "provider grid missing");
     });
 
-    await check("GET /api/health reports Stage 2", async () => {
+    await check("GET /api/health reports Stage 3", async () => {
       const res = await request("GET", "/api/health");
       assert.strictEqual(res.status, 200);
       const json = JSON.parse(res.body);
       assert.strictEqual(json.status, "ok");
       assert.strictEqual(json.product, "Nexora AI");
-      assert.strictEqual(json.stage, 2);
+      assert.strictEqual(json.stage, 3);
+      assert.ok(/projects/i.test(json.stageName), "stage name should describe projects");
     });
 
     await check("GET /api/providers reports honest provider state", async () => {
@@ -200,6 +203,24 @@ async function main() {
       const json = JSON.parse(res.body);
       assert.strictEqual(json.error.code, "STUDIO_DISCONNECTED");
       assert.ok(!json.result, "must not simulate a tool result");
+    });
+
+    await check("GET /api/workspace requires a device id; a real one gets an empty workspace", async () => {
+      const anonymous = await request("GET", "/api/workspace");
+      assert.strictEqual(anonymous.status, 400);
+      assert.ok(/device/i.test(anonymous.body), "error should name the header");
+      const stored = await new Promise((resolve, reject) => {
+        const req = http.request(
+          { host: "127.0.0.1", port: PORT, path: "/api/workspace", method: "GET", headers: { "X-Nexora-Device": "dev-server-test-01" }, timeout: 8000 },
+          (res) => { let body = ""; res.on("data", (c) => (body += c)); res.on("end", () => resolve({ status: res.statusCode, body: body })); }
+        );
+        req.on("error", reject);
+        req.end();
+      });
+      assert.strictEqual(stored.status, 200);
+      const json = JSON.parse(stored.body);
+      assert.deepStrictEqual(json.projects, []);
+      assert.deepStrictEqual(json.conversations, []);
     });
 
     await check("CSS and JS assets are served with correct types", async () => {

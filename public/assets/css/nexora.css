@@ -1041,3 +1041,104 @@ b { font-weight: 650; }
   font-size: 12.2px;
   color: var(--text-2);
 }
+
+/* ------------------------- Projects (Stage 3) ------------------------- */
+.new-project-form {
+  margin: 0 0 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.02);
+}
+.field-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1 1 200px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.field em { font-style: normal; opacity: 0.7; }
+.field input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: inherit;
+}
+.field input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+.project-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 14px 16px;
+}
+.project-card.project-loose { border-style: dashed; }
+.project-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.project-head h3 { margin: 0; font-size: 15px; }
+.project-head .muted { margin: 3px 0 0; font-size: 12px; }
+.project-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.conv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.conv-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9px;
+}
+.conv-row:hover { background: rgba(255, 255, 255, 0.04); }
+.conv-open {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+.conv-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.conv-meta { color: var(--off); font-size: 11px; white-space: nowrap; }
+.conv-del { color: var(--off); }
+.conv-del:hover { color: var(--err); }
+.conv-empty { font-size: 12px; margin: 4px 0 2px; padding: 0 4px; }
+.btn-danger:hover { color: var(--err); border-color: rgba(248, 113, 113, 0.4); }

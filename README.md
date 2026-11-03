@@ -13,16 +13,16 @@ Dark charcoal + violet interface ?? real local server ?? honest status reporting
 | 1 ??? Foundation | Branded interface, navigation, chat layout, local server, project structure | **Complete** |
 | **2 ??? AI Connection** | Real provider adapters (free-tier APIs, local Ollama), real chat responses | **Complete** |
 | **2.5 ??? Roblox Intelligence** | Expert instructions, static code verification with automatic repair, real Studio/MCP probing | **Complete ??? see verification below** |
-| 3 ??? Projects & Persistence | Chat history, projects, per-game context | Not started |
-| 4 ??? Roblox Studio Bridge | Real connection to Studio via bridge / plugin / MCP | Not started ??? nothing exists inside your Studio |
+| 3 ??? Projects & Persistence | Chat history, projects, per-game context | **Complete** |
+| 4 ??? Roblox Studio Bridge | Real connection to Studio via bridge / plugin / MCP | **In progress** - stdio bridge + guide shipped; guided setup pending |
 | 5 ??? Project Inspection | Read-only hierarchy/script analysis | Not started |
 | 6 ??? Approved Actions | Permission-gated changes with previews | Not started |
 | 7 ??? Testing & Refinement | Bug fixes, usability polish | Ongoing per stage |
-| **Online ??? Public deployment** | Hosted HTTPS site + cloud-ready server (env credentials, public-mode hardening) | **Code complete & tested ??? not yet deployed (needs your hosting account)** |
+| **Online (public deployment)** | Hosted HTTPS site + cloud-ready server (env credentials, public-mode hardening) | **Live: https://nexora-ai-8281.onrender.com** |
 
-**Chat is live.** Sending a message today calls the active AI provider through the
+**Chat, projects, and saved conversations are live.** Sending a message today calls the active AI provider through the
 local server and renders the model's genuine reply. If a provider fails, the UI
-shows the provider's real error with a working Retry ??? **nothing is ever faked.**
+shows the provider's real error with a working Retry ??? **nothing is ever faked.** Projects and chat history are stored on the Nexora server, scoped to your browser (a random device id, not an account).
 Features that belong to later stages are shown as clearly labeled "arrives in
 Stage X" states.
 
@@ -117,7 +117,7 @@ nexora-ai/
 ???           ????????? providers.js    # Models view: provider cards, key save/test/clear
 ???           ????????? app.js          # Navigation, server status, settings
 ????????? config/settings.json        # Server-side config + keys (auto-created, never HTTP-served)
-????????? data/                       # Stage 3 persistence target (empty)
+????????? data/                       # saved projects + conversations (auto-created, git-ignored)
 ????????? tests/
 ???   ????????? modules.test.js         # Markdown + highlighter tests (Node)
 ???   ????????? verify.test.js          # Deterministic Roblox verifier tests (no network)
@@ -148,6 +148,8 @@ All privileged traffic goes through the local Node process, so API keys stay in
 | Production / public-deploy hardening | `node tests/production.test.js` | **9/9 passed** |
 | Live Roblox skills A???D (real AI, paced) | `node tests/roblox.skills.test.js` | **4/4 passed** |
 | UI end-to-end (headless Edge, incl. mobile 390x844) | `node tests/ui.e2e.test.js` | **19/19 passed** |
+| Persistence (restart, device scoping, validation) | `node tests/persistence.test.js` | **12/12 passed** |
+| Projects UI (headless Edge: create, save, reload, delete) | `node tests/ui.projects.test.js` | **6/6 passed** |
 
 ### MCP protocol evidence (`tests/mcp.stub.test.js`)
 
@@ -252,6 +254,12 @@ Studio honestly reports *Disconnected*.
   and system prompt size before any provider is called.
 - Directory traversal and encoded (`%2e%2e`) escapes are blocked and tested.
 - `config/settings.json` is git ignored and **not served over HTTP** (tested).
+- Saved projects/chats are keyed by a random `X-Nexora-Device` id held in the
+  browser, so two visitors on the same deployment cannot read each other's
+  work. They are stored as readable JSON on the server's disk (`data/`), are
+  git-ignored, and are deleted with the project/conversation. This is device
+  scoping, not authentication: clearing site data or using another browser
+  starts an empty workspace.
 - Studio access: **read-only**. The server probes a real local bridge or MCP
   server (`studio.bridgeUrl`, `studio.mcpUrl` / `NEXORA_MCP_URL`) and uses its
   tools only when one actually answers (proven by `tests/mcp.stub.test.js`).
@@ -271,7 +279,7 @@ Studio honestly reports *Disconnected*.
   the reply says so. Typing indicator while waiting; provider errors render as
   error bubbles with the provider's real message, an actionable hint, and a
   working **Retry**. Code-block renderer with syntax highlighting and copy buttons.
-- **Projects** ??? labeled Stage 3 preview; stores nothing yet.
+- **Projects** — real projects and saved chats: create/rename/delete a project, start a chat inside it, open or delete earlier conversations. Stored by the server per browser; the view says so, and says when the disk is ephemeral.
 - **Studio** ??? live probed state: *Checking???* / *Connected* / *Disconnected*, with
   the real endpoint URL and tool count when something answers. It never says
   Connected without a real response. Includes a 4-step **Connect Studio** guide
@@ -285,15 +293,12 @@ Studio honestly reports *Disconnected*.
 
 ---
 
-## Next step (Stage 3)
+## Next step (Stage 4)
 
-Projects & Persistence: saved chat history, named projects, and per-game
-context ??? so conversations survive restarts and each Roblox project gets its
-own workspace. On a hosted deployment this becomes a cloud database (e.g.
-Supabase Postgres) plus accounts, replacing `localStorage`.
-
----
-
+Roblox Studio bridge: make the local Studio connection a guided, one-click
+setup inside the app (start `studio/mcp-http-bridge.js` automatically, detect
+Studio, show the tools it exposes), then read-only project inspection in chat.
+See [STUDIO-CONNECTION.md](STUDIO-CONNECTION.md) for the manual path that exists today.
 ## Deployment status
 
 **Live:** https://nexora-ai-8281.onrender.com (Render free web service, Oregon).

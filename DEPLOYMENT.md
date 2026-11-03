@@ -83,6 +83,7 @@ When an env key is present, the Models page marks it as `keySource:"env"` and bl
 - Render Free cold starts after idle (~60s). This is normal.
 - Pollinations keyless: 1 reply / 30s per IP (HTTP 402 FREE_LIMIT). The server waits once and retries (pacing), but rapid bursts will be rate-limited.
 - MCP client uses JSON-RPC over HTTP (with SSE fallback). Requires a real MCP server to connect; when absent, status is honestly disconnected. Studio's own server is stdio-only, so run `studio/mcp-http-bridge.js` (see STUDIO-CONNECTION.md).
+- Saved projects/chats live in `data/nexora-store.json` (env `NEXORA_DATA_DIR` moves it). Render Free has an ephemeral disk: the file survives page reloads but is wiped on every redeploy/restart, so the Projects view labels storage as temporary when `NEXORA_EPHEMERAL_DISK=1`. For durable hosting, mount a paid disk or move the store to Postgres.
 - Auto-deploy is not active: the service is linked to the repo, but no GitHub webhook exists (Render's GitHub App is not installed on it), so a push alone does not deploy. Trigger one with `POST /v1/services/srv-dbkmgft9fdbs73boqjvg/deploys`, or install Render's GitHub App on the repo to make pushes deploy.
 - Chat runs on Gemini (`gemini-flash-lite-latest`); `gemini-2.5-flash` is retired for new keys, and `gemini-flash-latest` / `gemini-3.x-flash` return 503 "high demand" often enough to be unusable as a default.
 

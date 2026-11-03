@@ -5,7 +5,7 @@
  * All AI provider traffic goes through this process, so credentials never
  * reach the browser, and every capability is gated in one place.
  *
- * Stage 2 (current): real AI chat via /api/chat with provider adapters
+ * Stage 3 (current): real AI chat via /api/chat with provider adapters
  * (Gemini, Ollama, OpenAI-compatible, Pollinations keyless), project-aware
  * Studio/MCP probing, and static Roblox verification with automatic repair.
  */
@@ -17,9 +17,10 @@ const ai = require("./lib/ai");
 const promptLib = require("./lib/prompt");
 const verifier = require("./lib/verify");
 const studio = require("./lib/studio");
+const store = require("./lib/store");
 
-const VERSION = "0.3.0";
-const STAGE = 2;
+const VERSION = "0.4.0";
+const STAGE = 3;
 /**
  * Bind/port resolution.
  *  - NEXORA_HOST / NEXORA_PORT   explicit overrides (local use)
@@ -68,7 +69,7 @@ function tokenMatches(candidate) {
 
 staticFiles.setSecure(PUBLIC_MODE || TRUST_PROXY);
 
-const MAX_BODY_BYTES = 256 * 1024;
+const MAX_BODY_BYTES = 1024 * 1024;
 const MAX_MESSAGE_CHARS = 8000;
 const MAX_HISTORY_MESSAGES = 60;
 
@@ -203,7 +204,7 @@ routes["GET /api/health"] = (req, res) => {
     product: "Nexora AI",
     version: VERSION,
     stage: STAGE,
-    stageName: "Roblox Developer Intelligence",
+    stageName: "Projects & Persistence",
     publicDeployment: PUBLIC_MODE,
     managedPort: MANAGED_PORT,
     uptimeMs: Date.now() - startedAt,
@@ -391,6 +392,53 @@ routes["POST /api/studio/mcp/call"] = async (req, res) => {
 };
 
 /* ------------------------------------------------------------------ */
+/* Stage 3: projects + saved conversations (per device, file-backed)    */
+/* ------------------------------------------------------------------ */
+
+function deviceOf(req) {
+  return store.deviceIdFrom(req.headers["x-nexora-device"]);
+}
+
+routes["GET /api/workspace"] = (req, res) => {
+  staticFiles.sendJson(res, 200, store.workspace(deviceOf(req)));
+};
+
+routes["POST /api/projects"] = async (req, res) => {
+  const body = await readJsonBody(req);
+  const project = store.createProject(deviceOf(req), body);
+  staticFiles.sendJson(res, 201, { project: project });
+};
+
+routes["PATCH /api/projects/:id"] = async (req, res, params) => {
+  const body = await readJsonBody(req);
+  const project = store.updateProject(deviceOf(req), params.id, body);
+  staticFiles.sendJson(res, 200, { project: project });
+};
+
+routes["DELETE /api/projects/:id"] = (req, res, params) => {
+  staticFiles.sendJson(res, 200, store.deleteProject(deviceOf(req), params.id));
+};
+
+routes["POST /api/conversations"] = async (req, res) => {
+  const body = await readJsonBody(req);
+  const conversation = store.createConversation(deviceOf(req), body);
+  staticFiles.sendJson(res, 201, { conversation: conversation });
+};
+
+routes["GET /api/conversations/:id"] = (req, res, params) => {
+  staticFiles.sendJson(res, 200, { conversation: store.getConversation(deviceOf(req), params.id) });
+};
+
+routes["PUT /api/conversations/:id"] = async (req, res, params) => {
+  const body = await readJsonBody(req);
+  staticFiles.sendJson(res, 200, store.saveConversation(deviceOf(req), params.id, body));
+};
+
+routes["DELETE /api/conversations/:id"] = (req, res, params) => {
+  staticFiles.sendJson(res, 200, store.deleteConversation(deviceOf(req), params.id));
+};
+
+/* ------------------------------------------------------------------ */
 /* Chat: system prompt → provider → Studio directives → verification   */
 /* ------------------------------------------------------------------ */
 
@@ -564,10 +612,36 @@ routes["POST /api/chat"] = async (req, res) => {
   }
 };
 
+/** Exact route first, then "METHOD /path/:param" patterns (one segment each). */
+function matchRoute(method, pathname) {
+  const exact = routes[method + " " + pathname];
+  if (exact) return { handler: exact, params: {} };
+  const parts = pathname.split("/").filter(Boolean);
+  for (const key of Object.keys(routes)) {
+    const space = key.indexOf(" ");
+    if (key.slice(0, space) !== method) continue;
+    const pattern = key.slice(space + 1);
+    if (pattern.indexOf(":") < 0) continue;
+    const segments = pattern.split("/").filter(Boolean);
+    if (segments.length !== parts.length) continue;
+    const params = {};
+    let matched = true;
+    for (let i = 0; i < segments.length; i++) {
+      if (segments[i].charAt(0) === ":") {
+        try { params[segments[i].slice(1)] = decodeURIComponent(parts[i]); } catch (_e) { matched = false; break; }
+      } else if (segments[i] !== parts[i]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return { handler: routes[key], params: params };
+  }
+  return null;
+}
+
 function handleApi(req, res, pathname) {
-  const key = req.method + " " + pathname;
-  const handler = routes[key];
-  if (!handler) {
+  const matched = matchRoute(req.method, pathname);
+  if (!matched) {
     if (pathname.startsWith("/api/") && req.method !== "GET") {
       staticFiles.sendJson(res, 405, { error: "Method not allowed.", allow: "GET" });
       return;
@@ -583,12 +657,13 @@ function handleApi(req, res, pathname) {
     return;
   }
   Promise.resolve()
-    .then(() => handler(req, res))
+    .then(() => matched.handler(req, res, matched.params))
     .catch((err) => {
       const status = err && err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
-      const message = err instanceof ai.AiError ? err.message : "Internal server error.";
+      let message = err instanceof ai.AiError ? err.message : "Internal server error.";
+      if (err && err.expose && typeof err.message === "string") message = err.message;
       const hint = err instanceof ai.AiError ? err.hint : null;
-      if (status >= 500) console.error("[nexora] API error on " + key + ":", err && err.message);
+      if (status >= 500) console.error("[nexora] API error on " + req.method + " " + pathname + ":", err && err.message);
       if (!res.headersSent) staticFiles.sendJson(res, status, { error: { message: message, hint: hint } });
     });
 }
@@ -629,6 +704,11 @@ server.on("error", (err) => {
   process.exit(1);
 });
 
+// Persist any debounced workspace write before the process goes away.
+process.on("exit", () => store.flush());
+process.on("SIGINT", () => { store.flush(); process.exit(0); });
+process.on("SIGTERM", () => { store.flush(); process.exit(0); });
+
 server.listen(PORT, HOST, () => {
   if (typeof server.keepAliveTimeout === "number") server.keepAliveTimeout = 65_000;
   const cfg = currentConfig();
@@ -636,12 +716,13 @@ server.listen(PORT, HOST, () => {
   console.log("");
   console.log("  ▲ NEXORA AI  ·  server ready");
   console.log("    URL      http://" + HOST + ":" + PORT);
-  console.log("    Version  " + VERSION + "  ·  Stage " + STAGE + " (Roblox Developer Intelligence)");
+  console.log("    Version  " + VERSION + "  ·  Stage " + STAGE + " (Projects & Persistence)");
   console.log("    Mode     " + (PUBLIC_MODE ? "PUBLIC (read-only config, HSTS, Studio calls locked)" : "local") +
     (MANAGED_PORT ? " · platform port" : "") + (TRUST_PROXY ? " · proxy-aware IP" : ""));
   console.log("    Active   " + active + (cfg.activeModel ? " · " + cfg.activeModel : ""));
   const envKeys = config.envManagedProviders();
   if (envKeys.length) console.log("    Keys     " + envKeys.join(", ") + " (from environment — never written to disk)");
+  console.log("    Data     " + store.storePath() + (process.env.NEXORA_EPHEMERAL_DISK ? " (ephemeral disk)" : ""));
   console.log("    Studio   bridge " + ((cfg.studio && cfg.studio.bridgeUrl) || "-") +
     " · MCP " + ((cfg.studio && cfg.studio.mcpUrl) || "not configured") + " (probing on request)");
   console.log("");

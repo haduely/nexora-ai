@@ -16,6 +16,10 @@ services:
         value: 1
       - key: PORT
         value: 10000
+      # Render Free disk is not persistent: saved projects/chats survive page
+      # reloads but are wiped on redeploy. The UI says so when this is set.
+      - key: NEXORA_EPHEMERAL_DISK
+        value: 1
       # Set ONE provider in the dashboard (env-managed; never written to disk):
       # - key: NEXORA_PROVIDER
       #   value: gemini

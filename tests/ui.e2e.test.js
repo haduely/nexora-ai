@@ -234,8 +234,8 @@ async function main() {
     await evalJs("document.querySelector('.nav-item[data-view=\"settings\"]').click()");
     await waitFor("document.getElementById('setServerHealth').textContent === 'ok'", "settings health");
     const stageText = await evalJs("document.getElementById('setBuildStage').textContent");
-    if (!/Stage 2/.test(stageText)) fail("build stage label", "got: " + stageText);
-    ok("Settings shows live health and Stage 2 label");
+if (!/Stage 3/.test(stageText)) fail("build stage label", "got: " + stageText);
+  ok("Settings shows live health and Stage 3 label");
 
     await evalJs("document.querySelector('.nav-item[data-view=\"studio\"]').click()");
     const studioText = await evalJs("document.querySelector('[data-view-panel=\"studio\"]').textContent");

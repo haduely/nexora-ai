@@ -9,7 +9,7 @@
 
   const VIEW_META = {
     chat: { title: "Chat", subtitle: "Describe what you want to build" },
-    projects: { title: "Projects", subtitle: "Organize conversations by game — Stage 3" },
+    projects: { title: "Projects", subtitle: "Saved chats, grouped by game" },
     studio: { title: "Studio", subtitle: "Connection status and project access" },
     models: { title: "Models", subtitle: "Configure providers, keys, and models" },
     settings: { title: "Settings", subtitle: "Server, preferences, and security" }
@@ -58,6 +58,7 @@
     if (name === "settings") refreshHealth();
     if (name === "models") loadModels();
     if (name === "studio") refreshStudio(true);
+    if (name === "projects" && global.NexoraProjects) global.NexoraProjects.refresh();
   }
 
   function openSidebar() {
@@ -288,7 +289,29 @@
     });
 
     if (global.NexoraProviders) global.NexoraProviders.init();
+    if (global.NexoraProjects) global.NexoraProjects.init();
     global.NexoraChat.init();
+
+    // Restore this browser's saved workspace, then reopen the last chat.
+    store.loadWorkspace()
+      .then(function () {
+        const last = store.state.prefs.lastConversationId;
+        if (last) {
+          return store.openConversation(last).then(function () {
+            global.NexoraChat.renderAll();
+          }).catch(function () { /* deleted elsewhere: start empty */ });
+        }
+      })
+      .catch(function (err) {
+        if (global.console) console.warn("[nexora] workspace unavailable:", err.message);
+      })
+      .then(function () {
+        if (global.NexoraProjects) global.NexoraProjects.render();
+      });
+
+    global.addEventListener("pagehide", function () {
+      try { store.flushSaves && store.flushSaves(); } catch (_e) { /* best effort */ }
+    });
 
     setView(store.state.prefs.lastView || "chat", { persist: false });
     refreshHealth();
