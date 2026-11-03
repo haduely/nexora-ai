@@ -100,7 +100,7 @@ function geminiError(status, body, fallbackText) {
   if (status === 404 || /NOT_FOUND|was not found/i.test(apiMessage)) {
     return new AiError("Gemini model not found: " + apiMessage, {
       status, code: "GEMINI_MODEL_NOT_FOUND", retryable: false,
-      hint: "In Models → Gemini, press 'Load models' to list the models your key can use, or set the model to 'gemini-2.5-flash'."
+      hint: "In Models → Gemini, press 'Load models' to list the models your key can use, or set the model to 'gemini-flash-latest'."
     });
   }
   if (status === 429 || reason === "RESOURCE_EXHAUSTED") {
@@ -419,7 +419,7 @@ const PROVIDERS = {
     label: "Google Gemini",
     keyless: false,
     internet: true,
-    defaultModel: "gemini-2.5-flash",
+    defaultModel: "gemini-flash-latest",
     chat: geminiChat,
     listModels: geminiListModels
   },
