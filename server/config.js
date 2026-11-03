@@ -58,6 +58,14 @@ const ENV_KEY_VARS = {
   pollinations: ["NEXORA_POLLINATIONS_KEY", "POLLINATIONS_API_KEY"]
 };
 
+// Optional base-URL overrides, so an OpenAI-compatible host (GitHub Models,
+// OpenRouter, vLLM, ...) can be selected without a settings.json file.
+const ENV_BASE_VARS = {
+  openai: ["NEXORA_OPENAI_BASE_URL", "OPENAI_BASE_URL"],
+  ollama: ["NEXORA_OLLAMA_URL", "OLLAMA_HOST"],
+  pollinations: ["NEXORA_POLLINATIONS_BASE_URL"]
+};
+
 let envKeyReport = {};
 
 function firstEnv(names) {
@@ -80,8 +88,18 @@ function applyEnvOverrides(cfg) {
     cfg.providers[id] = stored;
     envKeyReport[id] = true;
   }
+  for (const [id, names] of Object.entries(ENV_BASE_VARS)) {
+    const baseUrl = firstEnv(names);
+    if (!baseUrl) continue;
+    const stored = Object.assign({ type: id }, cfg.providers[id] || {});
+    stored.baseUrl = baseUrl;
+    cfg.providers[id] = stored;
+  }
   const providerEnv = String(process.env.NEXORA_PROVIDER || "").trim();
-  if (providerEnv && cfg.providers[providerEnv]) {
+  if (providerEnv) {
+    // A hosted instance has no settings.json, so the selected provider may not
+    // exist yet. Create the entry from env instead of silently falling back.
+    if (!cfg.providers[providerEnv]) cfg.providers[providerEnv] = { type: providerEnv };
     cfg.activeProvider = providerEnv;
     cfg.activeModel = cfg.providers[providerEnv].model || "";
   }
