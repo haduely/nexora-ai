@@ -55,10 +55,10 @@ environment variables (`NEXORA_GEMINI_KEY`, ????) and are **never written to
 disk**, because hosted disks are ephemeral. `render.yaml`, `Dockerfile` and
 `.env.example` are included.
 
-**Status honesty:** the code and hardening are implemented and covered by tests
-(`tests/production.test.js`, 9/9). The site itself is **not deployed** ??? a
-public HTTPS URL requires pushing this repo to GitHub and creating a hosting
-account, which only you can authorize. No public URL is claimed here.
+**Status honesty:** live at https://nexora-ai-8281.onrender.com — Render free tier,
+HTTPS, auto-deploy on every push to `main`. The free instance sleeps after ~15
+minutes idle, so the first request after a pause can take ~50 seconds. Hardening is
+covered by tests (`tests/production.test.js`, 9/9).
 
 
 ### Connecting Google Gemini (recommended upgrade, free key)
