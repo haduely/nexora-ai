@@ -331,6 +331,16 @@ check("prompt forbids pretending to inspect when Studio is disconnected", () => 
   assert.ok(/MANDATORY VERIFICATION/.test(sys));
 });
 
+check("prompt makes the user's requested mode outrank build defaults", () => {
+  const sys = prompt.buildSystemPrompt({ persona: {}, studio: null });
+  assert.ok(/Mode control/.test(sys));
+  assert.ok(/TALK mode/i.test(sys));
+  assert.ok(/NO fenced code blocks/i.test(sys));
+  assert.ok(/stay in TALK mode/i.test(sys));
+  assert.ok(/read-only for the rest of the session/i.test(sys));
+  assert.ok(sys.length <= prompt.MAX_PROMPT_CHARS);
+});
+
 check("prompt exposes real directives only when connected", () => {
   const connected = prompt.buildSystemPrompt({
     persona: { systemPrompt: "Be concise." },
